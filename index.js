@@ -11,12 +11,12 @@ const driver = neo4j.driver(
 
 // Define GraphQL schema
 const typeDefs = `
-  type Pessoa {
+  type Pessoa @node {
     nome: String!
     mensagens: [Mensagem!]! @relationship(type: "ENVIOU", direction: OUT)
   }
 
-  type Mensagem {
+  type Mensagem @node {
     conteudo: String!
     timestamp: String!
   }
@@ -27,7 +27,8 @@ const typeDefs = `
         statement: """
         MATCH (p:Pessoa {nome: $nome_pessoa})-[:ENVIOU]->(m:Mensagem)
         RETURN m
-        """
+        """,
+        columnName: "m"
       )
   }
 `;
