@@ -31,7 +31,9 @@ const typeDefs = `
 `;
 
 async function startServer() {
-  const neoSchema = new Neo4jGraphQL({ typeDefs, driver });
+  const neoSchema = new Neo4jGraphQL({ typeDefs, driver, features: {
+    cypherVersion: "4"
+  } });
   const schema = await neoSchema.getSchema();
 
   const server = new ApolloServer({
