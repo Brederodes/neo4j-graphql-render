@@ -12,7 +12,7 @@ const driver = neo4j.driver(
 // Define GraphQL schema
 const typeDefs = `
   type Pessoa @node {
-    name: String!
+    nome: String!
     mensagens: [Mensagem!]! @relationship(type: "ENVIOU", direction: OUT)
   }
 
