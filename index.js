@@ -45,8 +45,11 @@ async function startServer() {
     }
   });
 
-  await neoSchema.assertIndexesAndConstraints({ options: { create: true } });
+  // First get the schema
   const schema = await neoSchema.getSchema();
+
+  // Then assert indexes and constraints
+  await neoSchema.assertIndexesAndConstraints({ options: { create: true } });
 
   const server = new ApolloServer({
     schema,
