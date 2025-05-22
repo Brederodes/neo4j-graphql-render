@@ -1,68 +1,50 @@
-require('dotenv').config();
+const { ApolloServer } = require('apollo-server');
 const { Neo4jGraphQL } = require("@neo4j/graphql");
-const { ApolloServer } = require("apollo-server");
 const neo4j = require("neo4j-driver");
+const dotenv = require("dotenv");
 
-// Initialize Neo4j driver
-const driver = neo4j.driver(
-  process.env.NEO4J_URI,
-  neo4j.auth.basic(process.env.NEO4J_USER, process.env.NEO4J_PASSWORD)
-);
+dotenv.config();
 
-// Define GraphQL schema
-const typeDefs = `
-  type Pessoa @node {
-    nome: String!
-    mensagens: [Mensagem!]! @relationship(type: "ENVIOU", direction: OUT)
-  }
+const {
+    NEO4J_URI,
+    NEO4J_USER,
+    NEO4J_PASSWORD,
+    NEO4J_DATABASE,
+    PORT
+} = process.env;
 
-  type Mensagem @node {
-    conteudo: String!
-    timestamp: String!
-  }
+const typeDefs = `#graphql
+    type Pessoa @node {
+        nome: String!
+        mensagens: [Mensagem!]! @relationship(type: "ENVIOU", direction: OUT)
+    }
 
-  type Query {
-    mensagensDaPessoa(nome_pessoa: String!): [Mensagem]
-      @cypher(
-        statement: """
-        MATCH (p:Pessoa {nome: $nome_pessoa})-[:ENVIOU]->(m:Mensagem)
-        RETURN m
-        """,
-        columnName: "m"
-      )
-  }
+    type Mensagem @node {
+        conteudo: String!
+        timestamp: DateTime!
+        remetente: Pessoa! @relationship(type: "ENVIOU", direction: IN)
+    }
 `;
 
-async function startServer() {
-  const neoSchema = new Neo4jGraphQL({ 
-    typeDefs, 
+const driver = neo4j.driver(
+    NEO4J_URI,
+    neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD)
+);
+
+const neoSchema = new Neo4jGraphQL({
+    typeDefs,
     driver,
-    config: {
-      neo4jGraphQLConfig: {
-        driverConfig: {
-          database: process.env.NEO4J_DATABASE || 'neo4j'
-        }
-      }
-    }
-  });
-
-  // First get the schema
-  const schema = await neoSchema.getSchema();
-
-  // Then assert indexes and constraints
-  await neoSchema.assertIndexesAndConstraints({ options: { create: true } });
-
-  const server = new ApolloServer({
-    schema,
-    context: ({ req }) => ({ req, driver }),
-  });
-
-  const port = process.env.PORT || 4000;
-  server.listen({ port }).then(({ url }) => {
-    console.log(`🚀 Server ready at ${url}`);
-  });
-}
-
-startServer().catch(error => {
-  console.error('Error starting server:', error);
+    database: NEO4J_DATABASE,
 });
+
+(async () => {
+    const schema = await neoSchema.getSchema();
+
+    const server = new ApolloServer({
+        schema,
+    });
+
+    server.listen({ port: Number(PORT) || 4000 }).then(({ url }) => {
+        console.log(`🚀 Server ready at ${url}`);
+    });
+})();
